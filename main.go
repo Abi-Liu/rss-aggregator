@@ -1,36 +1,47 @@
 package main
 
-import _ "github.com/lib/pq"
-
 import (
+	"database/sql"
 	"log"
 	"net/http"
-	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/Abi-Liu/rss-aggregator/internal/database"
+	_ "github.com/lib/pq"
 )
 
+type apiConfig struct {
+	DB *database.Queries
+}
+
 func main() {
-	err := godotenv.Load()
+	env, err := loadEnv()
 	if err != nil {
-		log.Fatalf("Failed to load environment variables: %v\n", err)
+		log.Fatalf("Error loading environment variables: %s\n", err)
 	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatal("Port env variable is not set")
+
+	db, err := sql.Open("postgres", env.dbString)
+	if err != nil {
+		log.Fatalf("Failed to open database connection: %s", err)
+	}
+
+	dbQueries := database.New(db)
+
+	cfg := &apiConfig{
+		DB: dbQueries,
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/healthz", getHealthStatus)
 	mux.HandleFunc("GET /v1/err", simulateError)
+	mux.HandleFunc("POST /v1/users", cfg.createUser)
 
 	server := &http.Server{
-		Addr:    ":" + port,
+		Addr:    ":" + env.port,
 		Handler: mux,
 	}
 
-	log.Printf("Starting server on port %s", port)
+	log.Printf("Starting server on port %s", env.port)
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Failed to start on port %s: %v\n", port, err)
+		log.Fatalf("Failed to start on port %s: %v\n", env.port, err)
 	}
 }
