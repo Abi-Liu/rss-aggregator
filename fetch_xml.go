@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Abi-Liu/rss-aggregator/internal/database"
+	"github.com/google/uuid"
 )
 
 type Rss struct {
@@ -90,9 +93,32 @@ func fetchXML(feed database.Feed, wg *sync.WaitGroup, db *database.Queries) {
 		return
 	}
 
-	log.Printf("RSS scraped. Posts for %s\n", feed.Url)
 	for _, post := range rss.Channel.Item {
-		log.Print("  - " + post.Title)
+		nullTime := sql.NullTime{}
+		time, err := time.Parse(time.RFC1123Z, post.PubDate)
+		if err == nil {
+			nullTime.Time = time
+			nullTime.Valid = true
+		}
+		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:    uuid.New(),
+			Title: post.Title,
+			Url:   post.Link,
+			Description: sql.NullString{
+				String: post.Description,
+				Valid:  true,
+			},
+			PublishedAt: nullTime,
+			FeedID:      feed.ID,
+		})
+
+		if err != nil {
+			if strings.Contains(err.Error(), "violates unique constraint") {
+				continue
+			}
+			log.Printf("Failed to create post: %v", err)
+			continue
+		}
 	}
 
 	_, err = db.MarkFeedFetched(context.Background(), feed.ID)

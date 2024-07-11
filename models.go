@@ -78,3 +78,35 @@ func databaseUserFeedsToUserFeeds(userFeeds []database.UsersFeed) []UserFeed {
 	}
 	return res
 }
+
+type Post struct {
+	ID          uuid.UUID  `json:"id"`
+	Title       string     `json:"title"`
+	Url         string     `json:"url"`
+	Description *string    `json:"description"`
+	PublishedAt *time.Time `json:"published_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	FeedId      uuid.UUID  `json:"feed_id"`
+}
+
+func databasePostToPost(post database.Post) Post {
+	return Post{
+		ID:          post.ID,
+		Title:       post.Title,
+		Url:         post.Url,
+		Description: &post.Description.String,
+		PublishedAt: &post.PublishedAt.Time,
+		CreatedAt:   post.CreatedAt,
+		UpdatedAt:   post.UpdatedAt,
+		FeedId:      post.FeedID,
+	}
+}
+
+func databasePostsToPosts(posts []database.Post) []Post {
+	res := make([]Post, len(posts))
+	for i, v := range posts {
+		res[i] = databasePostToPost(v)
+	}
+	return res
+}
