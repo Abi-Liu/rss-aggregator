@@ -54,3 +54,14 @@ func (c *apiConfig) deleteFeedFollow(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJson(w, http.StatusNoContent, "")
 }
+
+func (c *apiConfig) getUsersFeeds(w http.ResponseWriter, r *http.Request, user database.User) {
+	feeds, err := c.DB.GetUsersFeeds(r.Context(), user.ID)
+
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "No followed feeds")
+		return
+	}
+
+	respondWithJson(w, http.StatusOK, databaseUserFeedsToUserFeeds(feeds))
+}

@@ -68,3 +68,11 @@ func databaseUserFeedToUserFeed(uf database.UsersFeed) UserFeed {
 		UpdatedAt: uf.UpdatedAt,
 	}
 }
+
+func databaseUserFeedsToUserFeeds(userFeeds []database.UsersFeed) []UserFeed {
+	res := make([]UserFeed, len(userFeeds))
+	for i, v := range userFeeds {
+		res[i] = databaseUserFeedToUserFeed(v)
+	}
+	return res
+}
