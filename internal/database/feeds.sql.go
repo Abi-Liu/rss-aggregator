@@ -15,7 +15,7 @@ import (
 const createFeed = `-- name: CreateFeed :one
 INSERT INTO feeds (id, url, user_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, url, user_id, created_at, updated_at
+RETURNING id, url, user_id, created_at, updated_at, last_fetched
 `
 
 type CreateFeedParams struct {
@@ -41,12 +41,13 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.UserID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastFetched,
 	)
 	return i, err
 }
 
 const getAllFeeds = `-- name: GetAllFeeds :many
-SELECT id, url, user_id, created_at, updated_at FROM feeds
+SELECT id, url, user_id, created_at, updated_at, last_fetched FROM feeds
 `
 
 func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
@@ -64,6 +65,7 @@ func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
 			&i.UserID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LastFetched,
 		); err != nil {
 			return nil, err
 		}
@@ -76,4 +78,54 @@ func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getNextFeedsToFetch = `-- name: GetNextFeedsToFetch :many
+SELECT id, url, user_id, created_at, updated_at, last_fetched FROM feeds
+ORDER BY last_fetched DESC NULLS FIRST
+LIMIT $1
+`
+
+func (q *Queries) GetNextFeedsToFetch(ctx context.Context, limit int32) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getNextFeedsToFetch, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.UserID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.LastFetched,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markFeedFetched = `-- name: MarkFeedFetched :execrows
+UPDATE feeds
+SET last_fetched = NOW(), updated_at = NOW()
+WHERE id = $1
+`
+
+func (q *Queries) MarkFeedFetched(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.ExecContext(ctx, markFeedFetched, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }

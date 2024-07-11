@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Abi-Liu/rss-aggregator/internal/database"
 	_ "github.com/lib/pq"
@@ -29,6 +30,8 @@ func main() {
 	cfg := &apiConfig{
 		DB: dbQueries,
 	}
+
+	go startScraping(cfg.DB, 10, 60*time.Second)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/healthz", getHealthStatus)
