@@ -34,7 +34,7 @@ func main() {
 	mux.HandleFunc("GET /v1/healthz", getHealthStatus)
 	mux.HandleFunc("GET /v1/err", simulateError)
 	mux.HandleFunc("POST /v1/users", cfg.createUser)
-	mux.HandleFunc("GET /v1/users", cfg.getCurrentUser)
+	mux.HandleFunc("GET /v1/users", cfg.middlewareAuth(cfg.getCurrentUser))
 
 	server := &http.Server{
 		Addr:    ":" + env.port,

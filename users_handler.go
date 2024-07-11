@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/Abi-Liu/rss-aggregator/internal/auth"
 	"github.com/Abi-Liu/rss-aggregator/internal/database"
 	"github.com/google/uuid"
 )
@@ -42,18 +40,6 @@ func (c *apiConfig) createUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusCreated, databaseUserToUser(user))
 }
 
-func (c *apiConfig) getCurrentUser(w http.ResponseWriter, r *http.Request) {
-	apikey, err := auth.GetApiKey(r.Header)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized, Please provide an api key")
-		return
-	}
-
-	user, err := c.DB.GetUserByApiKey(r.Context(), apikey)
-	if err != nil {
-		respondWithError(w, http.StatusNotFound, fmt.Sprintf("Could not find user: %s\n", err))
-		return
-	}
-
+func (c *apiConfig) getCurrentUser(w http.ResponseWriter, r *http.Request, user database.User) {
 	respondWithJson(w, http.StatusOK, databaseUserToUser(user))
 }
