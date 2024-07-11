@@ -12,6 +12,18 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteFollowFeed = `-- name: DeleteFollowFeed :execrows
+DELETE FROM users_feeds WHERE id = $1
+`
+
+func (q *Queries) DeleteFollowFeed(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteFollowFeed, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const followFeed = `-- name: FollowFeed :one
 INSERT INTO users_feeds (id, user_id, feed_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5)
@@ -43,4 +55,54 @@ func (q *Queries) FollowFeed(ctx context.Context, arg FollowFeedParams) (UsersFe
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getFeedById = `-- name: GetFeedById :one
+SELECT id, user_id, feed_id, created_at, updated_at FROM users_feeds WHERE id = $1
+`
+
+func (q *Queries) GetFeedById(ctx context.Context, id uuid.UUID) (UsersFeed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedById, id)
+	var i UsersFeed
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.FeedID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUsersFeeds = `-- name: GetUsersFeeds :many
+SELECT id, user_id, feed_id, created_at, updated_at FROM users_feeds WHERE user_id = $1
+`
+
+func (q *Queries) GetUsersFeeds(ctx context.Context, userID uuid.UUID) ([]UsersFeed, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersFeeds, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UsersFeed
+	for rows.Next() {
+		var i UsersFeed
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.FeedID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

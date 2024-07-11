@@ -50,3 +50,21 @@ func databaseFeedsToFeeds(feeds []database.Feed) []Feed {
 	}
 	return res
 }
+
+type UserFeed struct {
+	ID        uuid.UUID `json:"id"`
+	UserId    uuid.UUID `json:"user_id"`
+	FeedId    uuid.UUID `json:"feed_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func databaseUserFeedToUserFeed(uf database.UsersFeed) UserFeed {
+	return UserFeed{
+		ID:        uf.ID,
+		UserId:    uf.UserID,
+		FeedId:    uf.FeedID,
+		CreatedAt: uf.CreatedAt,
+		UpdatedAt: uf.UpdatedAt,
+	}
+}
