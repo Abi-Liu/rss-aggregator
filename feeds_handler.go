@@ -47,16 +47,5 @@ func (c *apiConfig) getAllFeeds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := make([]Feed, len(feeds))
-	for i, v := range feeds {
-		res[i] = databaseFeedToFeed(v)
-	}
-
-	type response struct {
-		Feeds []Feed `json:"feeds"`
-	}
-
-	respondWithJson(w, http.StatusOK, response{
-		Feeds: res,
-	})
+	respondWithJson(w, http.StatusOK, databaseFeedsToFeeds(feeds))
 }
