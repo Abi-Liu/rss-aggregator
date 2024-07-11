@@ -39,3 +39,24 @@ func (c *apiConfig) createFeed(w http.ResponseWriter, r *http.Request, user data
 
 	respondWithJson(w, http.StatusCreated, databaseFeedToFeed(feed))
 }
+
+func (c *apiConfig) getAllFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := c.DB.GetAllFeeds(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not retrieve feeds")
+		return
+	}
+
+	res := make([]Feed, len(feeds))
+	for i, v := range feeds {
+		res[i] = databaseFeedToFeed(v)
+	}
+
+	type response struct {
+		Feeds []Feed `json:"feeds"`
+	}
+
+	respondWithJson(w, http.StatusOK, response{
+		Feeds: res,
+	})
+}
