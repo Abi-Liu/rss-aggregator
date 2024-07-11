@@ -33,7 +33,7 @@ func (c *apiConfig) createFeed(w http.ResponseWriter, r *http.Request, user data
 	})
 
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to create feed")
+		respondWithError(w, http.StatusInternalServerError, "Failed to create feed: "+err.Error())
 		return
 	}
 
