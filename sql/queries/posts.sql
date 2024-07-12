@@ -8,6 +8,6 @@ SELECT posts.* FROM posts
 INNER JOIN users_feeds
 ON users_feeds.feed_id = posts.feed_id
 WHERE users_feeds.user_id = $1
-ORDER BY posts.published_at DESC
+ORDER BY posts.published_at ASC
 LIMIT $2;
 
